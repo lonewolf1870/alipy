@@ -228,7 +228,7 @@ class Identification:
 
 
 def run(ref, ukns, hdu=0, visu=True, skipsaturated=False,
-        r=5.0, n=500, sexkeepcat=False, sexrerun=True, verbose=True):
+        r=5.0, n=500, sexkeepcat=False, sexrerun=True, verbose=True, usesep=False):
     """
     Top-level function to identify transorms between images.
 
@@ -277,7 +277,7 @@ def run(ref, ukns, hdu=0, visu=True, skipsaturated=False,
     if verbose:
         print(10 * "#", " Preparing reference ...")
     ref = imgcat.ImgCat(ref, hdu=hdu)
-    ref.makecat(rerun=sexrerun, keepcat=sexkeepcat, verbose=verbose)
+    ref.makecat(rerun=sexrerun, keepcat=sexkeepcat, verbose=verbose, usesep=usesep)
     ref.makestarlist(skipsaturated=skipsaturated, n=n, verbose=verbose)
     if visu:
         ref.showstars(verbose=verbose)
@@ -291,7 +291,7 @@ def run(ref, ukns, hdu=0, visu=True, skipsaturated=False,
             print(10 * "#", "Processing %s" % (ukn))
 
         ukn = imgcat.ImgCat(ukn, hdu=hdu)
-        ukn.makecat(rerun=sexrerun, keepcat=sexkeepcat, verbose=verbose)
+        ukn.makecat(rerun=sexrerun, keepcat=sexkeepcat, verbose=verbose, usesep=usesep)
         ukn.makestarlist(skipsaturated=skipsaturated, n=n, verbose=verbose)
         if visu:
             ukn.showstars(verbose=verbose)

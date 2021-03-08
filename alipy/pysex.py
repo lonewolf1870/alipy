@@ -8,7 +8,7 @@ sextractor catalog.
 
 Dependencies:
  - sextractor (mandatory)
- - astroasciidata (mandatory)
+ - astropy (mandatory)
  - numpy (optional, needed for the array support)
  - pyfits (optional, needed for the array support)
 
@@ -23,7 +23,7 @@ Usage:
 
 import os
 import shutil
-import asciidata
+from astropy.io import ascii
 
 
 def _check_files(conf_file, conf_args, verbose=True):
@@ -107,7 +107,7 @@ def _get_cmd(img, img_ref, conf_args):
 
 
 def _read_cat(path='.pysex.cat'):
-    cat = asciidata.open(path)
+    cat = ascii.read(path)
     return cat
 
 
@@ -178,15 +178,15 @@ def run(image='', imageref='', params=[], conf_file=None,
         verbose = True
     _cleanup()
     if not type(image) == type(''):
-        import pyfits
+        import astropy.io.fits as fits
         im_name = '.pysex.fits'
-        pyfits.writeto(im_name, image.transpose())
+        fits.writeto(im_name, image.transpose())
     else:
         im_name = image
     if not type(imageref) == type(''):
-        import pyfits
+        import astropy.io.fits as fits
         imref_name = '.pysex.ref.fits'
-        pyfits.writeto(imref_name, imageref.transpose())
+        fits.writeto(imref_name, imageref.transpose())
     else:
         imref_name = imageref
     conf_file, conf_args = _check_files(conf_file, conf_args, verbose)

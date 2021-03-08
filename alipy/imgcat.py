@@ -4,6 +4,10 @@ from alipy import quad
 import os
 import numpy as np
 
+import sep
+from astropy.io import fits
+from astropy.table import Table
+
 
 class ImgCat:
     """
@@ -52,23 +56,48 @@ class ImgCat:
                                               len(self.quadlist),
                                               self.quadlevel)
 
-    def makecat(self, rerun=True, keepcat=False, verbose=True):
-        self.cat = pysex.run(
-            self.filepath,
-            conf_args={'DETECT_THRESH': 3.0,
-                       'ANALYSIS_THRESH': 3.0,
-                       'DETECT_MINAREA': 10,
-                       'PIXEL_SCALE': 1.0,
-                       'SEEING_FWHM': 2.0,
-                       "FILTER": "Y",
-                       'VERBOSE_TYPE': 'NORMAL' if verbose else 'QUIET'},
-            params=['X_IMAGE', 'Y_IMAGE',
-                    'FLUX_AUTO', 'FWHM_IMAGE',
-                    'FLAGS', 'ELONGATION',
-                    'NUMBER', "EXT_NUMBER"],
-            rerun=rerun,
-            keepcat=keepcat,
-            catdir="alipy_cats")
+
+    def makecat(self, rerun=True, keepcat=False, usesep=False, verbose=True):
+        if usesep is False:
+            self.cat = pysex.run(
+                self.filepath,
+                conf_args={'DETECT_THRESH': 3.0,
+                           'ANALYSIS_THRESH': 3.0,
+                           'DETECT_MINAREA': 10,
+                           'PIXEL_SCALE': 1.0,
+                           'SEEING_FWHM': 2.0,
+                           'FILTER': 'Y',
+                           'VERBOSE_TYPE': 'NORMAL' if verbose else 'QUIET'},
+                params=['X_IMAGE', 'Y_IMAGE',
+                        'FLUX_AUTO', 'FWHM_IMAGE',
+                        'FLAGS', 'ELONGATION',
+                        'NUMBER', 'EXT_NUMBER'],
+                rerun=rerun,
+                keepcat=keepcat,
+                catdir='alipy_cats')
+        else:
+            # Using SEP library. N.B.: multi-HDU FITS are currently not supported!
+            data     = fits.open(self.filepath)[0].data.astype('float')
+            bkg      = sep.Background(data)
+            data_sub = data - bkg
+
+            # Extracting sources
+            objects = sep.extract(data_sub, 10, err=bkg.globalrms)
+
+            # Building catalogue to be compliant with alipy
+            # Adding +1 to [X,Y] as Python array starts with [0,0]
+            cat = Table()
+            cat['X_IMAGE'] = objects['x']+1.
+            cat['Y_IMAGE'] = objects['y']+1.
+            cat['FLUX_AUTO'] = objects['flux']
+            cat['FWHM_IMAGE'] = 2. * np.sqrt(np.log(2) * (objects['a'] ** 2 + objects['b'] ** 2))
+            cat['FLAGS'] = objects['flag']
+            cat['ELONGATION'] = objects['a'] / objects['b']
+            cat['NUMBER'] = np.arange(len(objects)) + 1
+            cat['EXT_NUMBER'] = np.ones(len(objects), dtype=np.int64)
+
+            self.cat = cat
+
 
     def makestarlist(self, skipsaturated=False, n=200, verbose=True):
         if self.cat:

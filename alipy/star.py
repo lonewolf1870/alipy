@@ -266,7 +266,7 @@ def readsexcat(sexcat, hdu=0, verbose=True,
 
     if isinstance(sexcat, str):
 
-        import asciidata
+        from astropy.io import ascii as asciidata
         if not os.path.isfile(sexcat):
             print("Sextractor catalog does not exist :")
             print(sexcat)
@@ -274,7 +274,7 @@ def readsexcat(sexcat, hdu=0, verbose=True,
 
         if verbose:
             print("Reading %s " % (os.path.split(sexcat)[1]))
-        mycat = asciidata.open(sexcat)
+        mycat = asciidata.read(sexcat)
 
     else:  # then it's already a asciidata object
         mycat = sexcat
@@ -283,16 +283,18 @@ def readsexcat(sexcat, hdu=0, verbose=True,
     minimalfields = ["NUMBER", "X_IMAGE", "Y_IMAGE", "FWHM_IMAGE",
                      "ELONGATION", "FLUX_AUTO", "FLAGS", "EXT_NUMBER"]
     minimalfields.extend(propfields)
-    availablefields = [col.colname for col in mycat]
+    if verbose:
+        print(mycat)
+    availablefields = mycat.colnames
     for field in minimalfields:
         if field not in availablefields:
             print("Field %s not available in your catalog file !" % (field))
             sys.exit(1)
 
     if verbose:
-        print("Number of sources in catalog : %i" % (mycat.nrows))
+        print("Number of sources in catalog : %i" % (mycat.__len__()))
 
-    extnumbers = np.unique(mycat['EXT_NUMBER'].tonumpy())
+    extnumbers = np.unique(mycat['EXT_NUMBER'])
     if verbose:
         print("EXT_NUMBER values found in catalog : %s" %
               (", ".join(["%i" % val for val in extnumbers])))
@@ -305,7 +307,7 @@ def readsexcat(sexcat, hdu=0, verbose=True,
     propfields.append("FLAGS")
     propfields = list(set(propfields))
 
-    if mycat.nrows == 0:
+    if mycat.__len__() == 0:
         if verbose:
             print("No stars in the catalog :-(")
     else:
